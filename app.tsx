@@ -1,4 +1,4 @@
-// bb-plugin-project-tags — a BB plugin frontend entry.
+// bb-plugin-metadata-tags — a BB plugin frontend entry.
 //
 // Shows each thread's project as a small tag on the thread row's metadata
 // line in the sidebar, instead of relying on the project group headers.
@@ -7,7 +7,6 @@
 // Organize → Rows → Metadata is enabled; rows without a project name draw
 // nothing.
 import { useCallback, useEffect, useState } from "react";
-import { defineRpcContract } from "@get-bb/plugin-sdk";
 import {
   definePluginApp,
   experimental_Icon,
@@ -20,6 +19,7 @@ import {
 import type {
   ExperimentalThreadRowMetadataDataInput,
   ExperimentalThreadRowMetadataProps,
+  PluginRpcContract,
 } from "@get-bb/plugin-sdk/app";
 import type { rpcContract } from "./server";
 import { z } from "zod";
@@ -206,7 +206,10 @@ function ProjectTag({
   );
 }
 
-const prContract = defineRpcContract({
+// The frontend reads these contracts as plain Standard Schema shapes; zod 4
+// schemas satisfy the app entry's validator-neutral contract interface, so no
+// server-side SDK import is needed here.
+const prContract = {
   pullRequests: {
     input: z.object({ keys: z.array(z.string().min(1)) }),
     output: z.record(
@@ -243,7 +246,7 @@ const prContract = defineRpcContract({
       ]),
     ),
   },
-});
+} satisfies PluginRpcContract;
 
 type PrData = z.infer<(typeof prContract)["pullRequests"]["output"]> | undefined;
 type PullRequest = Extract<
@@ -254,7 +257,7 @@ type PullRequest = Extract<
 // The part of bb--git's `status` contract this plugin reads: one record
 // per environment id ("bb plugin rpc inspect bb--git status" prints the full
 // schema).
-const gitContract = defineRpcContract({
+const gitContract = {
   status: {
     input: z.object({ keys: z.array(z.string().min(1)) }),
     output: z.record(
@@ -302,7 +305,7 @@ const gitContract = defineRpcContract({
       ]),
     ),
   },
-});
+} satisfies PluginRpcContract;
 
 type GitData = z.infer<(typeof gitContract)["status"]["output"]> | undefined;
 type GitWorkingTree = Extract<
